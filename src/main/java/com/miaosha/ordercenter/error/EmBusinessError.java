@@ -14,6 +14,7 @@ public enum EmBusinessError implements CommonError {
 
     //30000 开头为商品信息相关错误定义
     ITEM_NOT_EXIST(30001, "商品不存在"),
+    PROMO_NOT_EXIST(30002, "活动不存在"),
 
     //40000 开头为订单信息相关错误定义
     STOCK_NOT_ENOUGH(40001, "商品库存不足"),

@@ -39,7 +39,7 @@ public class ItemController {
     @GetMapping("/get-item-by-id")
     @ApiOperation("根据id获取商品")
     public CommonReturnType getItemById(@RequestParam("itemId") Integer itemId){
-        ItemModel itemModel = itemService.getItemByItemId(itemId);
+        ItemModel itemModel = itemService.getItemByItemIdInRedis(itemId);
         return CommonReturnType.create(itemModel);
     }
 }

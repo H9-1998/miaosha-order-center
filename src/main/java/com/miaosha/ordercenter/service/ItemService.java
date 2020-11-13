@@ -4,6 +4,8 @@ import com.miaosha.ordercenter.dao.ItemDao;
 import com.miaosha.ordercenter.dao.ItemStockDao;
 import com.miaosha.ordercenter.entity.Item;
 import com.miaosha.ordercenter.entity.ItemStock;
+import com.miaosha.ordercenter.error.BusinessException;
+import com.miaosha.ordercenter.error.EmBusinessError;
 import com.miaosha.ordercenter.model.ItemModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +51,7 @@ public class ItemService {
      * @param itemId
      * @return
      */
-    public ItemModel getItemByItemId(Integer itemId){
+    public ItemModel getItemByItemIdInRedis(Integer itemId){
         ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get("item_" + itemId);
         if (itemModel == null){
             // redis中没有再查数据库
@@ -60,6 +62,23 @@ public class ItemService {
             redisTemplate.opsForValue().set("item_" + itemId, itemModel, 10, TimeUnit.MINUTES);
         }
         return itemModel;
+    }
+
+    /**
+     * 从db中获取商品
+     * @param itemId
+     * @return
+     * @throws BusinessException
+     */
+    public ItemModel getItemByItemIdInDB(Integer itemId) throws BusinessException {
+        Item item = itemDao.selectByPrimaryKey(itemId);
+        if (item == null)
+            throw new BusinessException(EmBusinessError.ITEM_NOT_EXIST);
+
+        ItemStock itemStock = itemStockDao.selectByItemId(itemId);
+        ItemModel itemModel = convertFromDataObject(item, itemStock);
+        return itemModel;
+
     }
 
 
