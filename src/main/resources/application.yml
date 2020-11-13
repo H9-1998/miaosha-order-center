@@ -14,8 +14,11 @@ spring:
       pool:
         min-idle: 10
         max-active: 20
-    database: 1
+    database: 0
   application:
     name: order-center
+  cloud:
+    nacos:
+      server-addr: localhost:8848
 mybatis:
   mapper-locations: classpath*:mapper/*.xml
