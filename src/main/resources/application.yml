@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/miaosha-ordercenter?characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    hikari:
+      username: root
+      password: 795138462
+      minimum-idle: 10
+      maximum-pool-size: 20
+      max-lifetime: 180000
+  redis:
+    host: 127.0.0.1
+    port: 6479
+    jedis:
+      pool:
+        min-idle: 10
+        max-active: 20
+    database: 1
+  application:
+    name: order-center
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
