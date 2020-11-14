@@ -1,10 +1,10 @@
 package com.miaosha.ordercenter.controller;
 
 import com.miaosha.ordercenter.error.BusinessException;
-import com.miaosha.ordercenter.error.EmBusinessError;
-import com.miaosha.ordercenter.model.UserModel;
 import com.miaosha.ordercenter.response.CommonReturnType;
 import com.miaosha.ordercenter.service.PromoService;
+import com.miaosha.ordercenter.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
+import javax.persistence.Id;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @auhor: dhz
@@ -38,6 +37,9 @@ public class PromoController {
     @Autowired
     private DiscoveryClient discoveryClient;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     /**
      * 发布活动
      * @param promoId 活动id
@@ -55,18 +57,12 @@ public class PromoController {
     @GetMapping("get-promo-token")
     public CommonReturnType getPromoToken(Integer promoId, Integer itemId, String token) throws BusinessException {
 
-//        if (redisTemplate.opsForValue().get(token) == null)
-//            // 用户未登录
-//            throw new BusinessException(EmBusinessError.USER_NOT_LOGIN);
-
-        Map userModel = (LinkedHashMap)redisTemplate.opsForValue().get(token);
-        // todo 从用户中心取用户信息
-        List<ServiceInstance> instances = discoveryClient.getInstances("user-center");
-        instances.stream().forEach( instance-> {
-            log.info(instance.getHost());
-        });
-//        String promoToken = promoService.generatePromoToken(itemId, promoId, )
-        return CommonReturnType.create(userModel);
+        // 解析jwt获取用户信息
+        Claims user = jwtUtil.getClaimsFromToken(token);
+        Integer userId = Integer.parseInt(user.get("id").toString());
+        // 生成秒杀令牌
+        String promoToken = promoService.generatePromoToken(itemId, promoId, userId);
+        return CommonReturnType.create(promoToken);
     }
 
 
