@@ -76,35 +76,31 @@ public class OrderController {
         }
 
         // 用线程池去队列化执行, 避免过多请求直接打崩下游
-//        Future<Object> future = executorService.submit(new Callable<Object>() {
-//
-//            @Override
-//            public Object call() throws Exception {
-//                // 生成流水号
-//                String stockLogId = itemService.initStockLog(itemId, amount);
-//
-//                // 事务性扣减库存, 先扣redis 成功后扣db, 失败则回补redis库存
-//                if (!mqProducer.transactionAsyncReduceStock(itemId, amount, userId, stockLogId, promoId))
-//                    throw new BusinessException(EmBusinessError.MQ_SEND_FAIL);
-//                return null;
-//            }
-//        });
-//
-//        try {
-//            future.get();
-//        } catch (InterruptedException e) {
-//            log.error(e.getMessage(), e);
-//            throw new BusinessException(EmBusinessError.UNKNOW_ERROR);
-//        } catch (ExecutionException e) {
-//            log.error(e.getMessage(), e);
-//            throw new BusinessException(EmBusinessError.UNKNOW_ERROR);
-//        }
+        Future<Object> future = executorService.submit(new Callable<Object>() {
 
-        String stockLogId = itemService.initStockLog(itemId, amount);
+            @Override
+            public Object call() throws Exception {
+                // 生成流水号
+                String stockLogId = itemService.initStockLog(itemId, amount);
 
-        // 事务性扣减库存, 先扣redis 成功后扣db, 失败则回补redis库存
-        if (!mqProducer.transactionAsyncReduceStock(itemId, amount, userId, stockLogId, promoId))
-            throw new BusinessException(EmBusinessError.MQ_SEND_FAIL);
+                // 事务性扣减库存, 先扣redis 成功后扣db, 失败则回补redis库存
+                if (!mqProducer.transactionAsyncReduceStock(itemId, amount, userId, stockLogId, promoId))
+                    throw new BusinessException(EmBusinessError.MQ_SEND_FAIL);
+                return null;
+            }
+        });
+
+        try {
+            future.get();
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            throw new BusinessException(EmBusinessError.UNKNOW_ERROR);
+        } catch (ExecutionException e) {
+            log.error(e.getMessage(), e);
+            throw new BusinessException(EmBusinessError.UNKNOW_ERROR);
+        }
+
+
 
         return CommonReturnType.create(null);
     }
