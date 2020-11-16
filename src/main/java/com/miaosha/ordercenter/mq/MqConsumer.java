@@ -55,11 +55,13 @@ public class MqConsumer {
                 Integer amount = (Integer) bodyMap.get("amount");
                 String stockLogId = (String) bodyMap.get("stockLogId");
                 StockLog stockLog = stockLogDao.selectByPrimaryKey(stockLogId);
-                if (stockLog.getStatus() != 1)
+                if (stockLog.getDbStatus() != 1)
                     // 不为1表示该订单已被处理过, 不再消费消息, 直接返回
                     return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
                 // 扣减db库存
                 itemService.decreaseDBStock(itemId, amount);
+                stockLog.setDbStatus(2);
+                stockLogDao.updateByPrimaryKey(stockLog);
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
 
             }

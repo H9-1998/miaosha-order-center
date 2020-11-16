@@ -22,5 +22,8 @@ public class StockLog {
     private String stockLogId;
     private Integer itemId;
     private Integer amount;
-    private Integer status;
+    // 扣redis库存状态 1初始化 2成功 3回滚
+    private Integer redisStatus;
+    // 扣db库存状态 1初始化 2成功 3回滚
+    private Integer dbStatus;
 }

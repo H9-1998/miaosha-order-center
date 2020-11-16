@@ -48,7 +48,7 @@ public class PromoService {
             throw new BusinessException(EmBusinessError.PROMO_NOT_EXIST);
 
         // 活动存在, 取商品信息
-        ItemModel itemModel = itemService.getItemByItemIdInDB(promo.getItemId());
+        ItemModel itemModel = itemService.getItemFromDB(promo.getItemId());
         if (itemModel == null)
             throw new BusinessException(EmBusinessError.ITEM_NOT_EXIST);
 
@@ -66,7 +66,7 @@ public class PromoService {
      * @param userId
      * @return
      */
-    public String generatePromoToken(Integer itemId, Integer promoId, Integer userId){
+    public String generatePromoToken(Integer itemId, Integer promoId, Integer userId) throws BusinessException {
         // 判断商品是否已售罄
         if (redisTemplate.hasKey("promo_item_stock_invalid_" + itemId)) {
             // 如果存在该key代表商品库存已空, 则不生成token

@@ -2,12 +2,16 @@ package com.miaosha.ordercenter.service;
 
 import com.miaosha.ordercenter.dao.ItemDao;
 import com.miaosha.ordercenter.dao.ItemStockDao;
+import com.miaosha.ordercenter.dao.PromoDao;
+import com.miaosha.ordercenter.dao.StockLogDao;
 import com.miaosha.ordercenter.entity.Item;
 import com.miaosha.ordercenter.entity.ItemStock;
+import com.miaosha.ordercenter.entity.Promo;
 import com.miaosha.ordercenter.entity.StockLog;
 import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.error.EmBusinessError;
 import com.miaosha.ordercenter.model.ItemModel;
+import com.miaosha.ordercenter.model.PromoModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -35,6 +39,12 @@ public class ItemService {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private PromoDao promoDao;
+
+    @Autowired
+    private StockLogDao stockLogDao;
+
     /**
      * 获取所有商品
      * @return
@@ -54,18 +64,27 @@ public class ItemService {
      * @param itemId
      * @return
      */
-    public ItemModel getItemByItemIdInRedis(Integer itemId){
+    public ItemModel getItemByItemIdInRedis(Integer itemId) throws BusinessException {
         ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get("item_" + itemId);
         if (itemModel == null){
             // redis中没有再查数据库
-            Item item = itemDao.selectByPrimaryKey(itemId);
-            ItemStock itemStock = itemStockDao.selectByItemId(itemId);
-            itemModel = convertFromDataObject(item, itemStock);
+            itemModel = getItemFromDB(itemId);
             // 存入redis
             redisTemplate.opsForValue().set("item_" + itemId, itemModel, 10, TimeUnit.MINUTES);
         }
         return itemModel;
     }
+
+//    /**
+//     * 从数据库取item信息
+//     * @param itemId
+//     * @return
+//     */
+//    private ItemModel getItemFromDB(Integer itemId) {
+//        Item item = itemDao.selectByPrimaryKey(itemId);
+//        ItemStock itemStock = itemStockDao.selectByItemId(itemId);
+//        return convertFromDataObject(item, itemStock);
+//    }
 
     /**
      * 从db中获取商品
@@ -73,15 +92,21 @@ public class ItemService {
      * @return
      * @throws BusinessException
      */
-    public ItemModel getItemByItemIdInDB(Integer itemId) throws BusinessException {
+    public ItemModel getItemFromDB(Integer itemId) throws BusinessException {
         Item item = itemDao.selectByPrimaryKey(itemId);
         if (item == null)
             throw new BusinessException(EmBusinessError.ITEM_NOT_EXIST);
 
         ItemStock itemStock = itemStockDao.selectByItemId(itemId);
         ItemModel itemModel = convertFromDataObject(item, itemStock);
-        return itemModel;
 
+        // 查询是否为活动商品 是的话将活动信息设置进itemModel
+        Promo promo = promoDao.selectPromoByItemId(itemId);
+        if (promo != null){
+            PromoModel promoModel = convertPromoModelFromDataObject(promo);
+            itemModel.setPromoModel(promoModel);
+        }
+        return itemModel;
     }
 
     /**
@@ -150,9 +175,11 @@ public class ItemService {
         StockLog stockLog = StockLog.builder()
                 .itemId(itemId)
                 .amount(amount)
-                .status(1)
+                .redisStatus(1)
+                .dbStatus(1)
                 .stockLogId(stockLogId)
                 .build();
+        stockLogDao.insertSelective(stockLog);
         return stockLogId;
     }
 
@@ -176,6 +203,17 @@ public class ItemService {
         BeanUtils.copyProperties(item, itemModel);
         BeanUtils.copyProperties(itemStock, itemModel);
         return itemModel;
+    }
+
+    /**
+     * promo装model
+     * @param promo
+     * @return
+     */
+    private PromoModel convertPromoModelFromDataObject(Promo promo){
+        PromoModel promoModel = new PromoModel();
+        BeanUtils.copyProperties(promo, promoModel);
+        return promoModel;
     }
 
 }

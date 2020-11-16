@@ -1,6 +1,7 @@
 package com.miaosha.ordercenter.dao;
 
 import com.miaosha.ordercenter.entity.Promo;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import tk.mybatis.mapper.common.Mapper;
 
@@ -10,4 +11,11 @@ import tk.mybatis.mapper.common.Mapper;
  */
 @Repository
 public interface PromoDao extends Mapper<Promo> {
+
+    /**
+     * 用itemId取promo
+     * @param itemId
+     * @return
+     */
+    Promo selectPromoByItemId(@Param("itemId") Integer itemId);
 }

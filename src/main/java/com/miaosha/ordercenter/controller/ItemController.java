@@ -1,5 +1,6 @@
 package com.miaosha.ordercenter.controller;
 
+import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.model.ItemModel;
 import com.miaosha.ordercenter.response.CommonReturnType;
 import com.miaosha.ordercenter.service.ItemService;
@@ -38,7 +39,7 @@ public class ItemController {
 
     @GetMapping("/get-item-by-id")
     @ApiOperation("根据id获取商品")
-    public CommonReturnType getItemById(@RequestParam("itemId") Integer itemId){
+    public CommonReturnType getItemById(@RequestParam("itemId") Integer itemId) throws BusinessException {
         ItemModel itemModel = itemService.getItemByItemIdInRedis(itemId);
         return CommonReturnType.create(itemModel);
     }

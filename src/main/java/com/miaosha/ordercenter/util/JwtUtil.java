@@ -59,7 +59,7 @@ public class JwtUtil {
      */
     public Integer getUserIdFromToken(String token){
         Claims user = getClaimsFromToken(token);
-        return Integer.parseInt(user.get("userId").toString());
+        return Integer.parseInt(user.get("id").toString());
     }
 
     /**

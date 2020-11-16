@@ -73,7 +73,7 @@ public class MqProducer {
                     log.error(e.getMessage(), e);
                     // 发生异常, 消息回滚, 流水单号设置为回滚(3)
                     StockLog stockLog = stockLogDao.selectByPrimaryKey(stockLogId);
-                    stockLog.setStatus(3);
+                    stockLog.setRedisStatus(3);
                     stockLogDao.updateByPrimaryKey(stockLog);
                     return LocalTransactionState.ROLLBACK_MESSAGE;
                 }
@@ -97,10 +97,10 @@ public class MqProducer {
                 if (stockLog == null)
                     // 可能订单未创建完成, 设为unknow等待下一次查询
                     return LocalTransactionState.UNKNOW;
-                if (stockLog.getStatus() == 1)
+                if (stockLog.getRedisStatus() == 1)
                     // 仍未初始化状态, 等待下一次查询
                     return LocalTransactionState.UNKNOW;
-                else if (stockLog.getStatus() == 2)
+                else if (stockLog.getRedisStatus() == 2)
                     // 订单已创建成功, 返回commit
                     return LocalTransactionState.COMMIT_MESSAGE;
                 else

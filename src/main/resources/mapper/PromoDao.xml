@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miaosha.ordercenter.dao.PromoDao">
+
+    <resultMap id="Promo" type="com.miaosha.ordercenter.entity.Promo"/>
+
+    <sql id="Base_Column_List">
+        id, start_time, promo_name, item_id, promo_item_price, end_time
+    </sql>
+
+    <!--    根据商品id查活动-->
+    <select id="selectPromoByItemId" resultMap="Promo">
+        select
+        <include refid="Base_Column_List"/>
+        from promo
+        where item_id = #{itemId}
+    </select>
+
+</mapper>

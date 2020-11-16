@@ -88,7 +88,7 @@ public class OrderService {
         if (stockLog == null)
             throw new BusinessException(EmBusinessError.UNKNOW_ERROR);
         // 1初始化 2成功 3失败
-        stockLog.setStatus(2);
+        stockLog.setRedisStatus(2);
 
         // 更新db
         stockLogDao.updateByPrimaryKey(stockLog);
