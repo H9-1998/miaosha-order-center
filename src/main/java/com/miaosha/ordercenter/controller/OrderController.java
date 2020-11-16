@@ -13,10 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import javax.annotation.PostConstruct;
 import java.util.concurrent.*;
 
@@ -54,10 +52,10 @@ public class OrderController {
 
     @PostMapping("create-order")
     @ApiOperation("创建订单")
-    public CommonReturnType createOrder(@RequestParam("itemId") Integer itemId,
+    public CommonReturnType createOrder(@RequestHeader("token") String token,
+                                        @RequestParam("itemId") Integer itemId,
                                         @RequestParam("amount") Integer amount,
                                         @RequestParam("promoId") Integer promoId,
-                                        @RequestParam("token") String token,
                                         @RequestParam("promoToken") String promoToken) throws BusinessException {
 
         // 从token取出用户id
@@ -103,6 +101,13 @@ public class OrderController {
 
 
         return CommonReturnType.create(null);
+    }
+
+    @GetMapping("/select-all-order")
+    @ApiOperation("获取某用户所有订单")
+    public CommonReturnType selectAllOrder(@RequestHeader("x-token") String token){
+        Integer userId = jwtUtil.getUserIdFromToken(token);
+        return orderService.selectAllOrder(userId);
     }
 
 

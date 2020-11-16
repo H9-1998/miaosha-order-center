@@ -13,6 +13,7 @@ import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -55,7 +56,10 @@ public class PromoController {
 
     @ApiOperation("获取秒杀令牌")
     @GetMapping("get-promo-token")
-    public CommonReturnType getPromoToken(Integer promoId, Integer itemId, String token) throws BusinessException {
+    public CommonReturnType getPromoToken(@RequestHeader("x-token") String token,
+                                          @RequestParam("promoId") Integer promoId,
+                                          @RequestParam("itemId") Integer itemId
+                                          ) throws BusinessException {
 
         // 解析jwt获取用户信息
         Claims user = jwtUtil.getClaimsFromToken(token);

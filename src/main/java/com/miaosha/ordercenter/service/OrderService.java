@@ -9,12 +9,14 @@ import com.miaosha.ordercenter.entity.StockLog;
 import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.error.EmBusinessError;
 import com.miaosha.ordercenter.model.ItemModel;
+import com.miaosha.ordercenter.response.CommonReturnType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -95,6 +97,16 @@ public class OrderService {
         orderDao.insertSelective(orderInfo);
         return orderInfo;
 
+    }
+
+    /**
+     * 获取某用户所有订单
+     * @param userId
+     * @return
+     */
+    public CommonReturnType selectAllOrder(Integer userId){
+        List<OrderInfo> orderInfos = orderDao.selectAllOrder(userId);
+        return CommonReturnType.create(orderInfos);
     }
 
     /**
