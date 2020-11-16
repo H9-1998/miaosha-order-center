@@ -15,4 +15,11 @@
         from item_stock
         where item_id = #{itemId}
     </select>
+
+<!--    扣减数据库库存-->
+    <update id="decreaseStock">
+        update item_stock
+        set stock = stock - #{amount}
+        where item_id = #{itemId} and stock >= #{amount}
+    </update>
 </mapper>

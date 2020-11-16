@@ -4,6 +4,7 @@ import com.miaosha.ordercenter.dao.ItemDao;
 import com.miaosha.ordercenter.dao.ItemStockDao;
 import com.miaosha.ordercenter.entity.Item;
 import com.miaosha.ordercenter.entity.ItemStock;
+import com.miaosha.ordercenter.entity.StockLog;
 import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.error.EmBusinessError;
 import com.miaosha.ordercenter.model.ItemModel;
@@ -11,9 +12,11 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -79,6 +82,61 @@ public class ItemService {
         ItemModel itemModel = convertFromDataObject(item, itemStock);
         return itemModel;
 
+    }
+
+    /**
+     * 扣减redis中库存
+     * @param itemId
+     * @param amount
+     * @return
+     */
+    public boolean decreaseRedisStock(Integer itemId, Integer amount){
+        // 扣减redis中库存
+        Long res = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, amount.intValue() * -1);
+        if (res > 0){
+            // 扣减后剩余量大于0直接返回
+            return true;
+        } else if (res == 0){
+            // 等于0给该商品打上售罄标识
+            redisTemplate.opsForValue().set("promo_item_stock_invalid_" + itemId, "true");
+            return true;
+        } else{
+            // 小于0应该失败, 因为小于0代表库存不足本次扣减, 回补redis库存
+            increaseStock(itemId, amount);
+            return false;
+        }
+
+
+    }
+
+    /**
+     * 回滚商品库存(redis)
+     * @param itemId
+     * @param amount
+     * @return
+     */
+    @Transactional
+    public boolean increaseStock(Integer itemId, Integer amount){
+        redisTemplate.opsForValue().increment(itemId, amount);
+        return true;
+    }
+
+    /**
+     * 初始化流水号
+     * @param itemId
+     * @param amount
+     * @return
+     */
+    @Transactional
+    public String initStockLog(Integer itemId, Integer amount){
+        String stockLogId = UUID.randomUUID().toString().replace("-", "");
+        StockLog stockLog = StockLog.builder()
+                .itemId(itemId)
+                .amount(amount)
+                .status(1)
+                .stockLogId(stockLogId)
+                .build();
+        return stockLogId;
     }
 
 

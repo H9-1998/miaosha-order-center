@@ -30,7 +30,7 @@ public class PromoModel {
     private Integer itemId;
 
     //商品的活动价
-    private BigDecimal promoItemPrice;
+    private Double promoItemPrice;
 
     //秒杀活动状态，1为未开始，2为进行中，3为已结束
     private Integer promoStatus;

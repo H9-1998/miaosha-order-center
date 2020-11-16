@@ -18,4 +18,13 @@ public interface ItemStockDao extends Mapper<ItemStock> {
      * @return
      */
     ItemStock selectByItemId(@Param("itemId") Integer itemId);
+
+    /**
+     * 扣减数据库商品库存
+     * @param itemId
+     * @param amount
+     * @return
+     */
+    Integer decreaseStock(@Param("itemId") Integer itemId,
+                          @Param("amount") Integer amount);
 }

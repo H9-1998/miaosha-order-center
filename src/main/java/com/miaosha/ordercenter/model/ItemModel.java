@@ -23,4 +23,6 @@ public class ItemModel implements Serializable {
     private Integer sales;
     private String imgUrl;
     private Integer stock;
+    //使用聚合模型，如果promoModel不为空，表示有还未结束的秒杀活动
+    private PromoModel promoModel;
 }

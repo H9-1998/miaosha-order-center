@@ -53,6 +53,16 @@ public class JwtUtil {
     }
 
     /**
+     * 从token取出用户id
+     * @param token
+     * @return
+     */
+    public Integer getUserIdFromToken(String token){
+        Claims user = getClaimsFromToken(token);
+        return Integer.parseInt(user.get("userId").toString());
+    }
+
+    /**
      * 获取token的过期时间
      *
      * @param token token
