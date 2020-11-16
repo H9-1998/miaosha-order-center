@@ -1,6 +1,9 @@
 package com.miaosha.ordercenter.mq;
 
 import com.alibaba.fastjson.JSON;
+import com.miaosha.ordercenter.dao.StockLogDao;
+import com.miaosha.ordercenter.entity.StockLog;
+import com.miaosha.ordercenter.service.ItemService;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
@@ -8,6 +11,7 @@ import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
@@ -29,6 +33,12 @@ public class MqConsumer {
     @Value("${mq.topicname}")
     private String topicName;
 
+    @Autowired
+    private ItemService itemService;
+
+    @Autowired
+    private StockLogDao stockLogDao;
+
     @PostConstruct
     public void init() throws MQClientException {
         consumer = new DefaultMQPushConsumer("stock_consumer_group");
@@ -44,10 +54,14 @@ public class MqConsumer {
                 Integer itemId = (Integer) bodyMap.get("itemId");
                 Integer amount = (Integer) bodyMap.get("amount");
                 String stockLogId = (String) bodyMap.get("stockLogId");
-                System.out.println(itemId);
-                System.out.println(amount);
-                System.out.println(stockLogId);
+                StockLog stockLog = stockLogDao.selectByPrimaryKey(stockLogId);
+                if (stockLog.getStatus() != 1)
+                    // 不为1表示该订单已被处理过, 不再消费消息, 直接返回
+                    return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                // 扣减db库存
+                itemService.decreaseDBStock(itemId, amount);
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+
             }
         });
 

@@ -105,8 +105,25 @@ public class ItemService {
             increaseStock(itemId, amount);
             return false;
         }
+    }
 
+    /**
+     * 扣减数据库库存
+     * @param itemId
+     * @param amount
+     * @return
+     */
+    @Transactional
+    public boolean decreaseDBStock(Integer itemId, Integer amount){
+        ItemStock itemStock = itemStockDao.selectByItemId(itemId);
+        Integer stock = itemStock.getStock();
+        if (stock < amount)
+            // 库存不足 返回false
+            return false;
 
+        itemStock.setStock(stock-amount);
+        itemStockDao.updateByPrimaryKey(itemStock);
+        return true;
     }
 
     /**

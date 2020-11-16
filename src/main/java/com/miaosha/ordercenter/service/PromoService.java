@@ -121,7 +121,7 @@ public class PromoService {
             return null;
         PromoModel promoModel = new PromoModel();
         BeanUtils.copyProperties(promo, promoModel);
-        promoModel.setPromoItemPrice(new BigDecimal(promo.getPromoItemPrice()));
+        promoModel.setPromoItemPrice(promo.getPromoItemPrice());
         return promoModel;
     }
 }
