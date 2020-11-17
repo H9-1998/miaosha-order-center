@@ -2,6 +2,7 @@ package com.miaosha.ordercenter.controller;
 
 import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.error.EmBusinessError;
+import com.miaosha.ordercenter.feignClient.UserCenterFeignClient;
 import com.miaosha.ordercenter.mq.MqProducer;
 import com.miaosha.ordercenter.response.CommonReturnType;
 import com.miaosha.ordercenter.service.ItemService;
@@ -41,6 +42,9 @@ public class OrderController {
 
     @Autowired
     private MqProducer mqProducer;
+
+    @Autowired
+    private UserCenterFeignClient userCenterFeignClient;
 
     private ExecutorService executorService;
 
@@ -107,6 +111,12 @@ public class OrderController {
     public CommonReturnType selectAllOrder(@RequestHeader("x-token") String token){
         Integer userId = jwtUtil.getUserIdFromToken(token);
         return orderService.selectAllOrder(userId);
+    }
+
+    @ApiOperation("获取订单详情")
+    @GetMapping("/get-order-detail")
+    public CommonReturnType getOrderDetail(@RequestHeader("x-token") String token, @RequestParam("orderId") String orderId) throws BusinessException {
+        return orderService.getOrderDetail(token, orderId);
     }
 
 

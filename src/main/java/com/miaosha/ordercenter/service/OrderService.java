@@ -1,15 +1,22 @@
 package com.miaosha.ordercenter.service;
 
+import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Ordering;
 import com.miaosha.ordercenter.dao.OrderDao;
 import com.miaosha.ordercenter.dao.SequenceInfoDao;
 import com.miaosha.ordercenter.dao.StockLogDao;
 import com.miaosha.ordercenter.entity.OrderInfo;
 import com.miaosha.ordercenter.entity.SequenceInfo;
 import com.miaosha.ordercenter.entity.StockLog;
+import com.miaosha.ordercenter.entity.UserInfo;
 import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.error.EmBusinessError;
+import com.miaosha.ordercenter.feignClient.UserCenterFeignClient;
 import com.miaosha.ordercenter.model.ItemModel;
+import com.miaosha.ordercenter.model.OrderDetail;
 import com.miaosha.ordercenter.response.CommonReturnType;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -40,6 +47,9 @@ public class OrderService {
 
     @Autowired
     private StockLogDao stockLogDao;
+
+    @Autowired
+    private UserCenterFeignClient userCenterFeignClient;
 
     /**
      * 创建订单
@@ -110,7 +120,27 @@ public class OrderService {
     }
 
     /**
-     * 获取订单序号
+     * 获取订单详情
+     * @param orderId
+     * @param token
+     * @return
+     */
+    public CommonReturnType getOrderDetail(String token, String orderId) throws BusinessException {
+        // 查询订单基本信息
+        OrderInfo orderInfo = orderDao.selectByPrimaryKey(orderId);
+        // 调用用户中心获取用户信息
+        CommonReturnType res = userCenterFeignClient.getUserInfo(token);
+        // 利用ObjectMapper将linkedHashMap转为UserInfo实体类
+        ObjectMapper mapper = new ObjectMapper();
+        UserInfo userInfo = mapper.convertValue(res.getData(), UserInfo.class);
+        OrderDetail orderDetail = convertOrderDetail(userInfo, orderInfo);
+        if (orderDetail == null)
+            throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR);
+        return CommonReturnType.create(orderDetail);
+    }
+
+    /**
+     * 生成订单序号
      * @return
      */
     @Transactional
@@ -125,5 +155,29 @@ public class OrderService {
         orderInfo.setCurrentValue(orderInfo.getCurrentValue()+orderInfo.getStep());
         sequenceInfoDao.updateByPrimaryKey(orderInfo);
         return seq.toString();
+    }
+
+
+
+//    ----------------------------------------非业务方法-----------------------------------------------------------------------
+
+    /**
+     * 转换OrderDetail
+     * @param userInfo
+     * @param orderInfo
+     * @return
+     */
+    public OrderDetail convertOrderDetail(UserInfo userInfo, OrderInfo orderInfo){
+        if (orderInfo == null || userInfo == null)
+            return null;
+
+        OrderDetail orderDetail = new OrderDetail();
+        BeanUtils.copyProperties(userInfo, orderDetail);
+        BeanUtils.copyProperties(orderInfo, orderDetail);
+
+        orderDetail.setOrderId(orderInfo.getId());
+        orderDetail.setUserId(userInfo.getId());
+        orderDetail.setUserName(userInfo.getName());
+        return orderDetail;
     }
 }
