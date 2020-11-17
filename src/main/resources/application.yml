@@ -20,11 +20,29 @@ spring:
   cloud:
     nacos:
       server-addr: localhost:8848
+    sentinel:
+      transport:
+        dashboard: localhost:9090     #指定sentinel控制台地址
 mybatis:
   mapper-locations: classpath*:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true    #驼峰命名
 
 
+
 mq.nameserver.addr: 127.0.0.1:9876
 mq.topicname: stock
+feign:
+  client:
+    config:
+      default:
+        loggerLeavel: basic
+  httpclient:
+    enabled: true                   #让feign使用Apache 的HTTPClient, 可以使用连接池优化性能
+    max-connections: 50             #连接池最大连接数
+    max-connections-per-route: 10   #单个feignClient最大连接数
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
