@@ -20,6 +20,13 @@ public enum EmBusinessError implements CommonError {
     STOCK_NOT_ENOUGH(40001, "商品库存不足"),
     MQ_SEND_FAIL(40002, "异步消息失败"),
     RATELIMIT(40003, "活动太火爆，请稍后重试"),
+
+    //50000 开头为sentinel限流/降级相关异常定义
+    FLOW_EXCEPTION(50001, "被限流了"),
+    DEGRADE_EXCEPTION(50002, "被降级了"),
+    SYSTEM_BLOCK_EXCEPTION(50003, "系统规则不通过, cpu负载超过限定值等"),
+    AUTHORITY_EXCEPTION(50004, "来源权限不通过"),
+    PARAM_FLOW_EXCEPTION(50005, "热点数据限流")
     ;
 
     private EmBusinessError(int errCode, String errMsg){

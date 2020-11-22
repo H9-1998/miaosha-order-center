@@ -23,6 +23,10 @@ spring:
     sentinel:
       transport:
         dashboard: localhost:9090     #指定sentinel控制台地址
+  mvc:
+    throw-exception-if-no-handler-found: true
+  resources:
+#    add-mappings: false
 mybatis:
   mapper-locations: classpath*:mapper/*.xml
   configuration:
@@ -30,7 +34,7 @@ mybatis:
 
 
 
-mq.nameserver.addr: 127.0.0.1:9876
+mq.nameserver.addr: 39.97.231.163:9876
 mq.topicname: stock
 feign:
   client:
