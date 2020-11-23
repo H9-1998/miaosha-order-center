@@ -25,4 +25,7 @@ public class ItemModel implements Serializable {
     private Integer stock;
     //使用聚合模型，如果promoModel不为空，表示有还未结束的秒杀活动
     private PromoModel promoModel;
+
+    // 额外字段, 当存进购物车时存在, 表示加购数量
+    private Integer amount;
 }

@@ -4,29 +4,31 @@ import com.miaosha.ordercenter.dao.ItemDao;
 import com.miaosha.ordercenter.dao.ItemStockDao;
 import com.miaosha.ordercenter.dao.PromoDao;
 import com.miaosha.ordercenter.dao.StockLogDao;
-import com.miaosha.ordercenter.entity.Item;
-import com.miaosha.ordercenter.entity.ItemStock;
-import com.miaosha.ordercenter.entity.Promo;
-import com.miaosha.ordercenter.entity.StockLog;
+import com.miaosha.ordercenter.entity.*;
 import com.miaosha.ordercenter.error.BusinessException;
 import com.miaosha.ordercenter.error.EmBusinessError;
 import com.miaosha.ordercenter.model.ItemModel;
 import com.miaosha.ordercenter.model.PromoModel;
+import com.miaosha.ordercenter.model.ShoppingCartModel;
+import com.miaosha.ordercenter.response.CommonReturnType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @auhor: dhz
  * @date: 2020/11/13 17:59
  */
+@Slf4j
 @Service
 public class ItemService {
 
@@ -74,17 +76,6 @@ public class ItemService {
         }
         return itemModel;
     }
-
-//    /**
-//     * 从数据库取item信息
-//     * @param itemId
-//     * @return
-//     */
-//    private ItemModel getItemFromDB(Integer itemId) {
-//        Item item = itemDao.selectByPrimaryKey(itemId);
-//        ItemStock itemStock = itemStockDao.selectByItemId(itemId);
-//        return convertFromDataObject(item, itemStock);
-//    }
 
     /**
      * 从db中获取商品
@@ -181,6 +172,69 @@ public class ItemService {
                 .build();
         stockLogDao.insertSelective(stockLog);
         return stockLogId;
+    }
+
+    /**
+     * 将商品加进购物车
+     * @param itemId    商品id
+     * @param amount    加购数量
+     * @param userId    用户id
+     * @return
+     */
+    @Transactional
+    public boolean addItemIntoShoppingCart(Integer itemId, Integer amount, Integer userId){
+        try {
+            // 1, 先判断商品是否存在
+            ItemModel itemModel = this.getItemByItemIdInRedis(itemId);
+            if (itemModel == null){
+                // 不存在该商品
+                throw new BusinessException(EmBusinessError.ITEM_NOT_EXIST);
+            }
+            // 2, 从redis中取出该用户的购物车, 有则添加, null则初始化购物车
+            ShoppingCartModel shoppingCartModel = (ShoppingCartModel) redisTemplate.opsForValue().get("shopping_cart_userId_" + userId);
+            if (shoppingCartModel == null){
+                // 没有该用户的购物车, 进行初始化购物车, 同时初始化加购商品列表
+                shoppingCartModel = new ShoppingCartModel();
+                shoppingCartModel.setUserId(userId);
+                // 用LinkedList, 因为插入删除操作较多
+                List<ItemModel> list = new LinkedList<>();
+                shoppingCartModel.setItems(list);
+            }
+            // 2, 取出购物车中的商品列表, 判断该商品是否已在购物车中, 如果已存在直接加数量
+            List<ItemModel> items = shoppingCartModel.getItems();
+            // 用来判断购物车中是否有该商品, 默认为false
+            AtomicReference<Boolean> isInCart = new AtomicReference<>(false);
+            items.stream().forEach(item -> {
+                if (item.getId() == itemId){
+                    item.setAmount(item.getAmount() + amount);
+                    isInCart.set(true);
+                }
+            });
+            // 购物车中未有该商品, 将其设置数量并存进购物车中
+            if (isInCart.get() == false){
+                itemModel.setAmount(amount);
+                items.add(itemModel);
+            }
+            // 将加购商品列表存进购物车中
+            shoppingCartModel.setItems(items);
+
+            // 3, 购物车存回redis
+            redisTemplate.opsForValue().set("shopping_cart_userId_" + userId, shoppingCartModel);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 查询某个用户的购物车
+     * @param userId    用户id
+     * @return
+     */
+    public CommonReturnType getShoppingCartByUserId(Integer userId){
+        ShoppingCartModel shoppingCartModel = (ShoppingCartModel) redisTemplate.opsForValue().get("shopping_cart_userId_" + userId);
+        return CommonReturnType.create(shoppingCartModel);
     }
 
 
