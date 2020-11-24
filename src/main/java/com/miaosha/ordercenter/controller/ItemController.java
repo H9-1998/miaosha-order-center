@@ -77,4 +77,16 @@ public class ItemController {
         Integer userId = jwtUtil.getUserIdFromToken(token);
         return itemService.getShoppingCartByUserId(userId);
     }
+
+    /**
+     * 清空购物车
+     * @param token
+     * @return
+     */
+    @PutMapping("/clean-shoppingCart")
+    @ApiOperation("清空购物车")
+    public CommonReturnType cleanShoppingCart(@RequestHeader("x-token") String token){
+        Integer userId = jwtUtil.getUserIdFromToken(token);
+        return itemService.cleanShoppingCart(userId);
+    }
 }

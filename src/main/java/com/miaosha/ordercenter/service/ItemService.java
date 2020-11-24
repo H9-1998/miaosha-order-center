@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -190,7 +192,7 @@ public class ItemService {
                 // 不存在该商品
                 throw new BusinessException(EmBusinessError.ITEM_NOT_EXIST);
             }
-            // 2, 从redis中取出该用户的购物车, 有则添加, null则初始化购物车
+            // 2, 从redis中取出该用户的购物车, 有则添加, 没有则初始化购物车
             ShoppingCartModel shoppingCartModel = (ShoppingCartModel) redisTemplate.opsForValue().get("shopping_cart_userId_" + userId);
             if (shoppingCartModel == null){
                 // 没有该用户的购物车, 进行初始化购物车, 同时初始化加购商品列表
@@ -234,9 +236,58 @@ public class ItemService {
      */
     public CommonReturnType getShoppingCartByUserId(Integer userId){
         ShoppingCartModel shoppingCartModel = (ShoppingCartModel) redisTemplate.opsForValue().get("shopping_cart_userId_" + userId);
+        shoppingCartModel.setTotalPrice(calculateTotalPrice(shoppingCartModel));
         return CommonReturnType.create(shoppingCartModel);
     }
 
+    /**
+     * 清空购物车
+     * @param userId
+     * @return
+     */
+    public CommonReturnType cleanShoppingCart(Integer userId){
+        ShoppingCartModel shoppingCartModel = (ShoppingCartModel) redisTemplate.opsForValue().get("shopping_cart_userId_" + userId);
+        List<ItemModel> items = new ArrayList<>();
+        shoppingCartModel.setItems(items);
+        redisTemplate.opsForValue().set("shopping_cart_userId_" + userId, shoppingCartModel);
+        return CommonReturnType.create(null);
+    }
+
+    /**
+     * 结算购物车总价
+     * @param cart
+     * @return
+     */
+    public BigDecimal calculateTotalPrice(ShoppingCartModel cart){
+        if (cart == null || cart.getItems() == null)
+            // 购物车或商品列表为空, 直接返回0
+            return new BigDecimal(0);
+
+        AtomicReference<BigDecimal> totalPrice = new AtomicReference<BigDecimal>(new BigDecimal(0));
+        List<ItemModel> items = cart.getItems();
+        items.forEach( itemModel -> {
+            if (itemModel.getPromoModel() == null || itemModel.getPromoModel().getPromoStatus() == null){
+                // 不是活动商品, 直接计算平价 * 数量
+                BigDecimal price = new BigDecimal(itemModel.getPrice()).multiply(new BigDecimal(itemModel.getAmount()));
+                totalPrice.set(totalPrice.get().add(price));
+            }
+            else {
+                // 活动商品, 查看活动状态 1未开始 2进行中 3已结束
+                Integer promoStatus = itemModel.getPromoModel().getPromoStatus();
+                if (promoStatus != 2){
+                    // 活动进行中, 按活动价格计算
+                    BigDecimal price = new BigDecimal(itemModel.getPromoModel().getPromoItemPrice()).multiply(new BigDecimal(itemModel.getAmount()));
+                    totalPrice.set(totalPrice.get().add(price));
+                }
+                else{
+                    // 活动未开始或结束, 按平价计算
+                    BigDecimal price = new BigDecimal(itemModel.getPrice()).multiply(new BigDecimal(itemModel.getAmount()));
+                    totalPrice.set(totalPrice.get().add(price));
+                }
+            }
+        });
+        return totalPrice.get();
+    }
 
 
 
